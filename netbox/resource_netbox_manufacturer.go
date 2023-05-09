@@ -32,6 +32,11 @@ func resourceNetboxManufacturer() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringLenBetween(0, 30),
 			},
+			"description": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringLenBetween(0, 200),
+			},
 		},
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -46,6 +51,7 @@ func resourceNetboxManufacturerCreate(d *schema.ResourceData, m interface{}) err
 
 	name := d.Get("name").(string)
 	data.Name = &name
+	data.Description = d.Get("description").(string)
 
 	slugValue, slugOk := d.GetOk("slug")
 	// Default slug to generated slug if not given
@@ -89,6 +95,7 @@ func resourceNetboxManufacturerRead(d *schema.ResourceData, m interface{}) error
 	}
 
 	d.Set("name", res.GetPayload().Name)
+	d.Set("description", res.GetPayload().Description)
 	d.Set("slug", res.GetPayload().Slug)
 
 	return nil
@@ -109,6 +116,10 @@ func resourceNetboxManufacturerUpdate(d *schema.ResourceData, m interface{}) err
 		data.Slug = strToPtr(getSlug(name))
 	} else {
 		data.Slug = strToPtr(slugValue.(string))
+	}
+
+	if d.HasChange("description") {
+		data.Description = d.Get("description").(string)
 	}
 
 	data.Tags = []*models.NestedTag{}
