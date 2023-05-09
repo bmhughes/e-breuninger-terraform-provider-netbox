@@ -32,6 +32,20 @@ func resourceNetboxPlatform() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringLenBetween(0, 30),
 			},
+			"description": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringLenBetween(0, 200),
+			},
+			"manufacturer_id": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"napalm_driver": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringLenBetween(0, 50),
+			},
 		},
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -93,6 +107,9 @@ func resourceNetboxPlatformRead(d *schema.ResourceData, m interface{}) error {
 
 	d.Set("name", res.GetPayload().Name)
 	d.Set("slug", res.GetPayload().Slug)
+	d.Set("description", res.GetPayload().Description)
+	d.Set("manufacturer_id", res.GetPayload().Manufacturer)
+	d.Set("napalm_driver", res.GetPayload().NapalmDriver)
 	return nil
 }
 
