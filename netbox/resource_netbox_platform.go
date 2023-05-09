@@ -32,6 +32,28 @@ func resourceNetboxPlatform() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringLenBetween(0, 30),
 			},
+			"description": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringLenBetween(0, 200),
+			},
+			"manufacturer_id": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"napalm_driver": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringLenBetween(0, 50),
+			},
+			"napalm_args": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringIsJSON,
+			},
 		},
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -43,6 +65,10 @@ func resourceNetboxPlatformCreate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*client.NetBoxAPI)
 
 	name := d.Get("name").(string)
+	description := d.Get("description").(string)
+	manufacturer_id := d.Get("manufacturer_id").(int64)
+	napalm_driver := d.Get("napalm_driver").(string)
+	napalm_args := d.Get("napalm_args").(string)
 
 	slugValue, slugOk := d.GetOk("slug")
 	var slug string
@@ -55,9 +81,13 @@ func resourceNetboxPlatformCreate(d *schema.ResourceData, m interface{}) error {
 
 	params := dcim.NewDcimPlatformsCreateParams().WithData(
 		&models.WritablePlatform{
-			Name: &name,
-			Slug: &slug,
-			Tags: []*models.NestedTag{},
+			Name:         &name,
+			Slug:         &slug,
+			Description:  description,
+			Manufacturer: &manufacturer_id,
+			NapalmDriver: napalm_driver,
+			NapalmArgs:   napalm_args,
+			Tags:         []*models.NestedTag{},
 		},
 	)
 
@@ -93,6 +123,10 @@ func resourceNetboxPlatformRead(d *schema.ResourceData, m interface{}) error {
 
 	d.Set("name", res.GetPayload().Name)
 	d.Set("slug", res.GetPayload().Slug)
+	d.Set("description", res.GetPayload().Description)
+	d.Set("manufacturer_id", res.GetPayload().Manufacturer)
+	d.Set("napalm_driver", res.GetPayload().NapalmDriver)
+	d.Set("napalm_args", res.GetPayload().NapalmArgs)
 	return nil
 }
 
@@ -103,7 +137,6 @@ func resourceNetboxPlatformUpdate(d *schema.ResourceData, m interface{}) error {
 	data := models.WritablePlatform{}
 
 	name := d.Get("name").(string)
-
 	slugValue, slugOk := d.GetOk("slug")
 	var slug string
 	// Default slug to generated slug if not given
@@ -113,9 +146,27 @@ func resourceNetboxPlatformUpdate(d *schema.ResourceData, m interface{}) error {
 		slug = slugValue.(string)
 	}
 
-	data.Slug = &slug
-	data.Name = &name
-	data.Tags = []*models.NestedTag{}
+	if d.HasChange("name") {
+		data.Name = &name
+	}
+	if d.HasChange("slug") {
+		data.Slug = &slug
+	}
+	if d.HasChange("description") {
+		data.Description = d.Get("description").(string)
+	}
+	if d.HasChange("manufacturer_id") {
+		manufacturer_id := d.Get("manufacturer_id").(int64)
+		data.Manufacturer = &manufacturer_id
+	}
+	if d.HasChange("description") {
+		data.NapalmDriver = d.Get("napalm_driver").(string)
+	}
+	if d.HasChange("description") {
+		data.NapalmArgs = d.Get("napalm_args").(string)
+	}
+
+	data.Tags = []*models.NestedTag{} // Why???
 
 	params := dcim.NewDcimPlatformsPartialUpdateParams().WithID(id).WithData(&data)
 
